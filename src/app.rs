@@ -1,5 +1,5 @@
 use {
-    crate::{App, sprite},
+    crate::{App, anim::Animate, sprite},
     dunge::{
         buffer::{Filter, Format, Sampler},
         glam::{IVec2, UVec2, Vec2, Vec4},
@@ -66,7 +66,7 @@ pub async fn run(control: Control) -> App<()> {
     let cx = dunge::context().await?;
     let shader = cx.make_shader(sprite_shader);
 
-    let camera_position = Cell::new(IVec2::ZERO);
+    let animate_camera = Cell::new(Animate::new(Vec2::ZERO));
     let screen_size = Cell::new(UVec2::ONE);
     let camera = || {
         let m = const {
@@ -76,7 +76,7 @@ pub async fn run(control: Control) -> App<()> {
         };
 
         let scale = m / screen_size.get().as_vec2();
-        let offset = scale * (camera_position.get() * 2).as_vec2();
+        let offset = scale * animate_camera.get().point() * 2.;
         Vec4::new(scale.x, scale.y, offset.x, offset.y)
     };
 
@@ -104,6 +104,10 @@ pub async fn run(control: Control) -> App<()> {
     let render = async {
         loop {
             let redraw = window.redraw().await;
+
+            // animate camera movement
+            let dt = redraw.delta_time().as_secs_f32() * 4.;
+            animate_camera.update(|a| a.advance(dt));
             camera_uniform.update(&cx, &camera());
 
             cx.shed(|s| {
@@ -122,6 +126,7 @@ pub async fn run(control: Control) -> App<()> {
         }
     };
 
+    let mut camera_position = IVec2::ZERO;
     let movement = async {
         loop {
             let moves = [
@@ -139,7 +144,8 @@ pub async fn run(control: Control) -> App<()> {
                 .race()
                 .await;
 
-            camera_position.update(|p| p + dp);
+            camera_position += dp;
+            animate_camera.update(|a| a.with_target(camera_position.as_vec2()));
         }
     };
 
