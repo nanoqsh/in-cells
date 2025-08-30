@@ -126,27 +126,24 @@ pub async fn run(control: Control) -> App<()> {
         }
     };
 
-    let mut camera_position = IVec2::ZERO;
-    let movement = async {
-        loop {
-            let moves = [
-                (KeyCode::KeyW, IVec2::new(0, -1)),
-                (KeyCode::KeyS, IVec2::new(0, 1)),
-                (KeyCode::KeyA, IVec2::new(1, 0)),
-                (KeyCode::KeyD, IVec2::new(-1, 0)),
-            ];
+    let camera_position = Cell::new(IVec2::ZERO);
+    let movement = {
+        let moves = [
+            (KeyCode::KeyW, IVec2::new(0, -1)),
+            (KeyCode::KeyS, IVec2::new(0, 1)),
+            (KeyCode::KeyA, IVec2::new(1, 0)),
+            (KeyCode::KeyD, IVec2::new(-1, 0)),
+        ];
 
-            let dp = moves
-                .map(async |(key, dp)| {
+        moves
+            .map(async |(key, dp)| {
+                loop {
                     window.key_pressed(key).await;
-                    dp
-                })
-                .race()
-                .await;
-
-            camera_position += dp;
-            animate_camera.update(|a| a.with_target(camera_position.as_vec2()));
-        }
+                    camera_position.update(|p| p + dp);
+                    animate_camera.update(|a| a.with_target(camera_position.get().as_vec2()));
+                }
+            })
+            .race()
     };
 
     let close = window.key_pressed(KeyCode::Escape);
