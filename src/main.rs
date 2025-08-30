@@ -1,4 +1,16 @@
-use {dunge_winit::prelude::*, futures_concurrency::prelude::*, std::num::NonZeroU32};
+use {
+    dunge::{
+        buffer::{Filter, Format, Sampler},
+        glam::{IVec2, UVec2, Vec2, Vec4},
+        group::BoundTexture,
+        storage::Uniform,
+    },
+    dunge_winit::{prelude::*, winit::keyboard::KeyCode},
+    futures_concurrency::prelude::*,
+    image::ImageReader,
+    sl::{Groups, PassVertex, Render},
+    std::{cell::Cell, io::Cursor, num::NonZeroU32},
+};
 
 type App<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -9,18 +21,6 @@ fn main() {
 }
 
 async fn app(control: Control) -> App<()> {
-    use {
-        dunge::{
-            buffer::{Filter, Format, Sampler},
-            glam::{IVec2, UVec2, Vec2, Vec4},
-            group::BoundTexture,
-            storage::Uniform,
-        },
-        dunge_winit::winit::keyboard::KeyCode,
-        sl::{Groups, PassVertex, Render},
-        std::cell::Cell,
-    };
-
     #[repr(C)]
     #[derive(Vertex)]
     struct Vert {
@@ -158,8 +158,6 @@ async fn app(control: Control) -> App<()> {
 }
 
 fn spritemap() -> App<(image::RgbaImage, NonZeroU32, NonZeroU32)> {
-    use {image::ImageReader, std::io::Cursor};
-
     let sprites = ImageReader::new(Cursor::new(include_bytes!("../sprites.png")))
         .with_guessed_format()?
         .decode()?;
